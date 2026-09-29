@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_DB: beat
+      POSTGRES_USER: beat
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a local database password}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - beat-data:/var/lib/postgresql/data
+      - ./server/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+volumes:
+  beat-data:
