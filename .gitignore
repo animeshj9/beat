@@ -8,3 +8,5 @@ data/
 *.log
 coverage/
 native-dist/
+.wrangler/
+worker-dist/

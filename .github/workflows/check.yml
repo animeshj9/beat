@@ -1,4 +1,4 @@
-name: Beat checks and deployment
+name: Beat checks
 
 on:
   push:
@@ -36,25 +36,11 @@ jobs:
         run: npm run build:pwa
       - name: Validate install and offline assets
         run: npm run check:pwa
-      - name: Upload tested website
-        uses: actions/upload-pages-artifact@v4
+      - name: Validate Cloudflare deployment bundle
+        run: npm run check:worker
+      - name: Upload checked sample website
+        uses: actions/upload-artifact@v4
         with:
+          name: beat-sample-web
           path: dist/
-
-  deploy:
-    needs: check
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Deploy tested website
-        id: deployment
-        uses: actions/deploy-pages@v4
+          retention-days: 7

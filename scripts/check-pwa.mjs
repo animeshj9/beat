@@ -10,7 +10,7 @@ for (const size of [192, 512]) {
   const icon = manifest.icons.find(i => i.sizes === `${size}x${size}`);
   assert.ok(icon && existsSync(root + icon.src), `Missing ${size}px icon`);
 }
-assert.equal(readFileSync(`${root}/CNAME`, 'utf8').trim(), 'beat.animeshj9.com');
+assert.equal(existsSync(`${root}/CNAME`), false, 'Cloudflare builds must omit GitHub Pages domain metadata');
 const html = readFileSync(`${root}/index.html`, 'utf8');
 assert.equal((html.match(/rel="manifest"/g) || []).length, 1);
 assert.equal((html.match(/src="\/install.js"/g) || []).length, 1);
@@ -47,4 +47,4 @@ handlers.fetch({
   respondWith: () => { intercepted = true; },
 });
 assert.equal(intercepted, false, 'External map requests must remain outside the app cache');
-console.log('PWA manifest, domain, assets, offline navigation and external-request isolation passed.');
+console.log('PWA manifest, assets, offline navigation and external-request isolation passed.');

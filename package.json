@@ -15,7 +15,10 @@
     "export": "expo export --platform web",
     "check": "npm run typecheck && npm test",
     "build:pwa": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && EXPO_PUBLIC_API_URL= EXPO_OFFLINE=1 expo export --platform web && node scripts/build-pwa.mjs",
-    "check:pwa": "node scripts/check-pwa.mjs"
+    "check:pwa": "node scripts/check-pwa.mjs",
+    "build:cloudflare": "npm run check && npm run build:pwa && npm run check:pwa",
+    "deploy:worker": "wrangler deploy --config wrangler.jsonc",
+    "check:worker": "wrangler deploy --dry-run --config wrangler.jsonc --outdir worker-dist"
   },
   "keywords": [],
   "author": "",
@@ -37,7 +40,8 @@
   "devDependencies": {
     "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "wrangler": "4.135.0"
   },
   "private": true,
   "engines": {

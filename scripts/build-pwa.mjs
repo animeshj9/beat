@@ -2,8 +2,6 @@ import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync } fro
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 const dir = 'dist';
-writeFileSync(join(dir, 'CNAME'), 'beat.animeshj9.com\n');
-writeFileSync(join(dir, '.nojekyll'), '');
 mkdirSync(join(dir, 'icons'), { recursive: true });
 for (const size of [192, 512]) copyFileSync(`assets/icon-${size}.png`, join(dir, `icons/icon-${size}.png`));
 writeFileSync(join(dir, 'manifest.webmanifest'), JSON.stringify({ id: '/', name: 'Beat', short_name: 'Beat', description: 'Sample neighbourhood stories for your private alpha.', start_url: '/', scope: '/', display: 'standalone', background_color: '#F6F4EF', theme_color: '#F6F4EF', icons: [192,512].map(size=>({src:`/icons/icon-${size}.png`,sizes:`${size}x${size}`,type:'image/png',purpose:'any'})) }));

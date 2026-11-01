@@ -107,4 +107,4 @@ See [the product spec](docs/product-spec.md), [architecture](docs/architecture.m
 
 ## Installable sample website
 
-The sample app can be installed from a browser on Android and iPhone. `npm run build:pwa` builds it, and `npm run check:pwa` validates the installation and offline assets. GitHub Actions checks pull requests and deploys the tested `main` artifact to GitHub Pages, following the existing lab website pipeline. See [deployment and phone installation](docs/installable-alpha.md) for the one-time Pages/DNS setup for `beat.animeshj9.com`.
+The sample app can be installed from a browser on Android and iPhone. `npm run build:pwa` builds it, and `npm run check:pwa` validates the installation and offline assets. GitHub Actions checks pull requests and `main`; Cloudflare Workers Builds independently builds, tests and deploys `main`, following the live lab hosting pattern. See [deployment and phone installation](docs/installable-alpha.md) for the one-time Cloudflare GitHub connection and `beat.animeshj9.com` domain setup.
