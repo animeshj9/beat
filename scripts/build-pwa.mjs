@@ -4,29 +4,34 @@ import { join } from 'node:path';
 const dir = 'dist';
 mkdirSync(join(dir, 'icons'), { recursive: true });
 for (const size of [192, 512]) copyFileSync(`assets/icon-${size}.png`, join(dir, `icons/icon-${size}.png`));
-writeFileSync(join(dir, 'manifest.webmanifest'), JSON.stringify({ id: '/', name: 'Beat', short_name: 'Beat', description: 'Sample neighbourhood stories for your private alpha.', start_url: '/', scope: '/', display: 'standalone', background_color: '#F6F4EF', theme_color: '#F6F4EF', icons: [192,512].map(size=>({src:`/icons/icon-${size}.png`,sizes:`${size}x${size}`,type:'image/png',purpose:'any'})) }));
+writeFileSync(join(dir, 'manifest.webmanifest'), JSON.stringify({ id: '/', name: 'Beat', short_name: 'Beat', description: 'Sample neighbourhood stories for your private alpha.', start_url: '/', scope: '/', display: 'standalone', background_color: '#101211', theme_color: '#101211', icons: [192,512].map(size=>({src:`/icons/icon-${size}.png`,sizes:`${size}x${size}`,type:'image/png',purpose:'any'})) }));
 const install = `
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(console.error);
-const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-if (!standalone) {
-  const panel = document.createElement('aside');
-  panel.setAttribute('aria-label', 'Install Beat');
-  Object.assign(panel.style, {position:'fixed',bottom:'86px',left:'16px',right:'16px',maxWidth:'420px',margin:'auto',padding:'14px',borderRadius:'14px',background:'#28382F',color:'white',zIndex:'10000',font:'14px/1.5 system-ui',boxShadow:'0 4px 20px #0003'});
-  const text = document.createElement('span');
-  text.textContent = /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'Install Beat: in Safari, tap Share → Add to Home Screen.' : 'Install Beat: open your browser menu → Add to Home screen or Install app.';
-  const close = document.createElement('button'); close.textContent = 'Dismiss'; close.style.marginLeft='12px'; close.onclick=()=>panel.remove();
-  panel.append(text,close); document.body.append(panel);
-  window.addEventListener('beforeinstallprompt', event => {
-    event.preventDefault(); text.textContent='Keep Beat on your home screen. ';
-    const button=document.createElement('button'); button.textContent='Install Beat';
-    button.onclick=async()=>{await event.prompt(); const result=await event.userChoice;if(result.outcome==='accepted')panel.remove();};
-    panel.insertBefore(button,close);
-  });
-  window.addEventListener('appinstalled',()=>panel.remove());
-}`;
+let installPrompt;
+window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt=event; });
+let panel;
+const closePanel=()=>{panel?.remove();panel=undefined;document.querySelector('[aria-label="Install Beat"]')?.focus();};
+window.addEventListener('beat:install', () => {
+  if (panel) { closePanel(); return; }
+  panel = document.createElement('aside');
+  panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Install Beat instructions');
+  Object.assign(panel.style, {position:'fixed',bottom:'86px',left:'16px',right:'16px',maxWidth:'420px',margin:'auto',padding:'20px',borderRadius:'12px',border:'1px solid #55614d',background:'#1c211e',color:'white',zIndex:'10000',font:'14px/1.5 system-ui',boxShadow:'0 4px 20px #0008'});
+  const text=document.createElement('p');
+  const standalone=matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  text.textContent=standalone ? 'Beat is already installed.' : /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'In Safari, tap Share → Add to Home Screen.' : 'Open your browser menu → Add to Home screen or Install app.';
+  const close=document.createElement('button'); close.textContent='Close'; close.onclick=closePanel;
+  Object.assign(close.style,{padding:'10px 16px',marginTop:'10px',background:'#d6ff62',border:'0',borderRadius:'6px',color:'#101211',cursor:'pointer'});
+  panel.append(text);
+  if(installPrompt&&!standalone){const button=document.createElement('button');button.textContent='Install Beat';button.style.padding='10px';button.style.marginRight='12px';button.onclick=async()=>{const prompt=installPrompt;installPrompt=undefined;button.disabled=true;try{await prompt.prompt();await prompt.userChoice;}finally{closePanel();}};panel.append(button);}
+  panel.append(close);document.body.append(panel);close.focus();
+
+});
+window.addEventListener('appinstalled',closePanel);
+window.addEventListener('keydown',event=>{if(event.key==='Escape'&&panel)closePanel();});
+`;
 writeFileSync(join(dir, 'install.js'), install);
 let html = readFileSync(join(dir, 'index.html'), 'utf8');
-html = html.replace('</head>', '<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#F6F4EF"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Beat"><link rel="apple-touch-icon" href="/icons/icon-192.png"></head>');
+html = html.replace('</head>', '<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#101211"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Beat"><link rel="apple-touch-icon" href="/icons/icon-192.png"></head>');
 html = html.replace('</body>', '<script src="/install.js" defer></script></body>');
 writeFileSync(join(dir, 'index.html'), html);
 const walk = path => readdirSync(join(dir,path),{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(join(path,e.name)):[ '/'+join(path,e.name) ]);

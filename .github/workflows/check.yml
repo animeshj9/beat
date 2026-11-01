@@ -36,6 +36,21 @@ jobs:
         run: npm run build:pwa
       - name: Validate install and offline assets
         run: npm run check:pwa
+      - name: Install browser for interaction checks
+        run: npx playwright install --with-deps chromium
+      - name: Verify mobile and desktop interactions
+        run: |
+          python3 -m http.server 8080 --directory dist &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          npm run check:ui
+      - name: Upload UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beat-ui-review
+          path: /tmp/beat-review/
+          retention-days: 7
       - name: Validate Cloudflare deployment bundle
         run: npm run check:worker
       - name: Upload checked sample website

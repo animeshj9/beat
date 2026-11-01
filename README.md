@@ -22,7 +22,7 @@ Without `EXPO_PUBLIC_API_URL`, Beat runs in **clearly labelled sample mode**. Th
 - Location onboarding, 2/5/10 km radius and optional foreground GPS.
 - For You, Nearby, Map and Saved views; multiple saved places and category filters.
 - Distance / significance / recency / confidence ranking, and new-since-last-visit filtering.
-- State-change cards, evidence detail, source links and external maps.
+- Immersive, vertically paged visual stories with useful/save actions, evidence detail, source links and external maps.
 - Native map pins; browser map plus an event list.
 - Saved stories, entity follows, useful / not useful feedback and preferences on-device.
 - Cached feed for offline viewing; clear loading, empty, denied-location and network-error states.
@@ -108,3 +108,5 @@ See [the product spec](docs/product-spec.md), [architecture](docs/architecture.m
 ## Installable sample website
 
 The sample app can be installed from a browser on Android and iPhone. `npm run build:pwa` builds it, and `npm run check:pwa` validates the installation and offline assets. GitHub Actions checks pull requests and `main`; Cloudflare Workers Builds independently builds, tests and deploys `main`, following the live lab hosting pattern. See [deployment and phone installation](docs/installable-alpha.md) for the one-time Cloudflare GitHub connection and `beat.animeshj9.com` domain setup.
+
+See [the feed redesign and browser checks](docs/feed-redesign.md) for interaction coverage and archive-photo attribution.

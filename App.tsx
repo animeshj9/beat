@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  ImageBackground,
+  Platform,
   Linking,
   Modal,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,22 +19,22 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import {
   categories,
-  formatDistance,
   rankFeed,
   starterPlaces,
 } from "./src/domain.mjs";
 import { fetchFeed, isDemo, searchPlaces } from "./src/api";
 import type { Change, Place, Preferences } from "./src/types";
 import EventMap from "./src/components/EventMap";
+import StoryFeed from "./src/components/StoryFeed";
 
 const C = {
-  bg: "#F6F4EF",
-  ink: "#28382F",
-  muted: "#777C73",
-  orange: "#DA5C35",
-  line: "#E5E5DD",
-  white: "#FFFFFF",
-  green: "#53755D",
+  bg: "#101211",
+  ink: "#F6F7F2",
+  muted: "#A9B1AA",
+  orange: "#D6FF62",
+  line: "#303730",
+  white: "#1C211E",
+  green: "#D6FF62",
 };
 const defaults: Preferences = {
   places: [starterPlaces[0]],
@@ -88,6 +89,7 @@ function Button({
   );
 }
 function AppContent() {
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [prefs, setPrefs] = useState<Preferences>(defaults);
   const [ready, setReady] = useState(false);
   const [events, setEvents] = useState<Change[]>([]);
@@ -180,11 +182,7 @@ function AppContent() {
         void AsyncStorage.setItem(feedCacheKey, JSON.stringify(merged)).catch(
           () => {},
         );
-        setNotice(
-          isDemo
-            ? "Sample feed refreshed. These are fictional examples."
-            : "You’re up to date with the latest discovered changes.",
-        );
+        setNotice("");
       }
     } catch {
       if (id === request.current)
@@ -305,10 +303,6 @@ function AppContent() {
             (category === "all" || e.category === category),
         )
       : ranked;
-  const fresh = rankFeed(events, places, {
-    hidden: prefs.hidden,
-    since: visit.current,
-  }).length;
   const mapPlace = places[0] || prefs.places[0];
   function mapEvent(e: Change) {
     setDetail(null);
@@ -319,13 +313,16 @@ function AppContent() {
   }
   const picker = (
     <View style={{ gap: 20 }}>
-      <View>
-        <Text style={s.eyebrow}>YOUR WORLD, A LITTLE CLOSER</Text>
-        <Text style={s.hero}>What’s happening{"\n"}around you?</Text>
-        <Text style={s.subtitle}>
-          Follow the places you care about.{"\n"}We’ll find what’s changed.
-        </Text>
-      </View>
+      {!prefs.onboarded && <ImageBackground source={require("./assets/stories/junction.webp")} style={s.welcomeImage} imageStyle={{ opacity: 0.65, width: "100%", height: "100%" }}>
+        <View style={{ padding: 24, backgroundColor: "#00000055" }}>
+          <Text style={[s.eyebrow, { color: "white" }]}>THE VIEW FROM YOUR BLOCK</Text>
+          <Text style={s.hero}>Life happens{`\n`}around here.</Text>
+          <Text style={[s.subtitle, { color: "white" }]}>Your streets. Your spots. Your beat.</Text>
+          <Text style={[s.small, { color: "white", marginTop: 16 }]}>Sample alpha · Fictional stories · Archive photo</Text>
+        </View>
+      </ImageBackground>}
+      <View><Text style={s.cardTitle}>{prefs.onboarded ? "Your places" : "Pick your neighbourhood"}</Text>
+      <Text style={s.subtitle}>Start with an area. GPS is optional.</Text></View>
       <Pressable
         accessibilityRole="button"
         onPress={locate}
@@ -461,7 +458,7 @@ function AppContent() {
     );
   return (
     <SafeAreaView style={s.safe}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <View style={s.shell}>
         <View style={s.header}>
           <View style={s.row}>
@@ -471,100 +468,70 @@ function AppContent() {
             <Text style={s.wordmark}>beat</Text>
           </View>
           <View style={s.row}>
-            <View style={s.dot} />
-            <Text style={s.tagline}>A little more local.</Text>
+            <Text style={s.tagline}>LOOK AROUND.</Text>
+            {Platform.OS === "web" && <Pressable accessibilityRole="button" accessibilityLabel="Install Beat" onPress={() => window.dispatchEvent(new Event("beat:install"))} style={{ padding: 10 }}><Icon name="download-outline" size={19} /></Pressable>}
           </View>
         </View>
         {!prefs.onboarded ? (
           <ScrollView contentContainerStyle={s.onboarding}>
             {picker}
-            <View style={s.introNote}>
-              <Icon name="sparkles-outline" color={C.orange} />
-              <Text style={[s.small, { flex: 1 }]}>
-                {isDemo
-                  ? "Explore a sample neighbourhood feed. Every example is labelled; live news comes from connected sources."
-                  : "Local changes, with the evidence attached. No noise, no endless scroll."}
-              </Text>
-            </View>
+            <Text style={[s.small, { marginTop: 24 }]}>Archive photo: Tushar0034 / Wikimedia Commons · CC BY 4.0. Nanakramguda, Nov 2025. Cropped.</Text>
+            <Pressable accessibilityRole="link" onPress={() => Linking.openURL("https://commons.wikimedia.org/wiki/File:View_of_service_road_junction_towards_Nanakramguda,_November_2025.jpg")}><Text style={s.link}>Photo source &amp; licence ↗</Text></Pressable>
           </ScrollView>
         ) : (
           <>
-            <ScrollView
-              contentContainerStyle={s.content}
-              refreshControl={
-                <RefreshControl
-                  refreshing={busy}
-                  onRefresh={() => refresh()}
-                  tintColor={C.orange}
-                />
-              }
-            >
-              <View style={s.topline}>
-                <Text style={s.eyebrow}>
-                  {tab === "Saved"
-                    ? "YOUR READING LIST"
-                    : "THE NEIGHBOURHOOD EDIT"}
-                </Text>
+            <View style={s.feedToolbar}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Manage places" onPress={() => setLocationsOpen(true)} style={[s.row, { flex: 1, minHeight: 44 }]}>
+                <Icon name="location-outline" size={17} color={C.orange} />
+                <View style={{ flex: 1 }}><Text numberOfLines={1} style={s.bold}>{places.length === 1 ? places[0].name : "Your places"}</Text>
+                <Text style={s.small}>{isDemo ? "Sample alpha · Fictional stories" : "Your neighbourhood feed"}</Text></View>
+                <Icon name="chevron-down" size={14} />
+              </Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="Filter feed" onPress={() => setFiltersOpen(true)} style={s.refresh}><Icon name="options-outline" color={C.orange} /></Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="Refresh feed" disabled={busy} onPress={() => refresh()} style={s.refresh}>{busy ? <ActivityIndicator color={C.orange} /> : <Icon name="refresh-outline" color={C.orange} />}</Pressable>
+            </View>
+            {!!error && <View style={s.errorBox}><Text accessibilityRole="alert" style={s.error}>{error}</Text><Button label="Try again" onPress={() => refresh()} /></View>}
+            {tab === "Nearby" && !nearby ? <View style={[s.empty, { flex: 1, justifyContent: "center", paddingHorizontal: 24 }]}>
+              <Icon name="navigate-outline" size={40} color={C.orange} />
+              <Text style={s.cardTitle}>Find your next local thing.</Text>
+              <Text style={s.subtitle}>Choose to share your location for nearby updates.</Text>
+              <Button label="Find changes near me" onPress={locate} disabled={busy} />
+              {!!searchError && <Text accessibilityRole="alert" style={s.error}>{searchError}</Text>}
+            </View> : tab === "Map" ? <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}><EventMap events={shown} place={mapPlace} onSelect={setDetail} /></ScrollView> :
+              <StoryFeed key={`${tab}-${category}-${activePlace}-${newOnly}`} events={shown} ranked={ranked} saved={prefs.saved} useful={prefs.useful} followed={prefs.followed}
+                onSave={(e) => toggle("saved", e.id)} onUseful={(e) => toggle("useful", e.id)} onRead={setDetail} onMap={mapEvent}
+                onReset={() => { setCategory("all"); setNewOnly(false); setTab("For you"); }} savedView={tab === "Saved"} busy={busy} />}
+            {!!notice && <View style={s.notice}><Text accessibilityLiveRegion="polite" style={[s.small, { flex: 1 }]}>{notice}</Text><Pressable accessibilityRole="button" accessibilityLabel="Dismiss notice" onPress={() => setNotice("")} style={{ padding: 12 }}><Icon name="close" size={16} /></Pressable></View>}
+            <View style={s.nav}>
+              {tabs.map(([name, icon]) => (
                 <Pressable
-                  accessibilityLabel="Manage places"
-                  onPress={() => setLocationsOpen(true)}
-                  style={s.row}
+                  accessibilityRole="tab"
+                  accessibilityLabel={name}
+                  accessibilityState={{ selected: tab === name }}
+                  key={name}
+                  onPress={() => setTab(name)}
+                  style={s.navItem}
                 >
-                  <Icon name="location-outline" size={14} />
-                  <Text style={s.small}>
-                    {places.length === 1 ? places[0].name : "Your places"}
+                  <Icon
+                    name={icon}
+                    size={22}
+                    color={tab === name ? C.orange : C.muted}
+                  />
+                  <Text
+                    style={[s.navText, tab === name && { color: C.orange }]}
+                  >
+                    {name}
                   </Text>
-                  <Icon name="chevron-down" size={12} />
+                  {tab === name && <View style={s.navDot} />}
                 </Pressable>
-              </View>
-              <View style={s.titleRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.hero}>
-                    {tab === "For you"
-                      ? "Closer to what’s\nchanging."
-                      : tab === "Nearby"
-                        ? "Right around you."
-                        : tab === "Map"
-                          ? "A sense of place."
-                          : "Worth keeping."}
-                  </Text>
-                  <Text style={s.subtitle}>
-                    {tab === "Saved"
-                      ? `${shown.length} saved change${shown.length === 1 ? "" : "s"} to come back to.`
-                      : isDemo
-                        ? "A first look at your neighbourhood feed."
-                        : `${fresh} changes since your last visit.`}
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityLabel="Refresh feed"
-                  onPress={() => refresh()}
-                  style={s.refresh}
-                >
-                  {busy ? (
-                    <ActivityIndicator color={C.orange} />
-                  ) : (
-                    <Icon name="refresh-outline" color={C.orange} />
-                  )}
-                </Pressable>
-              </View>
-              {isDemo && (
-                <View style={s.sampleBanner}>
-                  <Icon name="flask-outline" size={16} color={C.orange} />
-                  <Text style={s.sampleText}>
-                    SAMPLE EDITION · Fictional changes, real app.
-                  </Text>
-                </View>
-              )}
-              {!!error && (
-                <View style={s.errorBox}>
-                  <Text accessibilityRole="alert" style={s.error}>
-                    {error}
-                  </Text>
-                  <Button label="Try again" onPress={() => refresh()} quiet />
-                </View>
-              )}
-              <ScrollView
+              ))}
+            </View>
+          </>
+        )}
+        <Modal visible={filtersOpen} animationType="slide" onRequestClose={() => setFiltersOpen(false)}>
+          <SafeAreaView style={s.safe}><View style={[s.shell, { padding: 24 }]}>
+            <View style={s.sectionRow}><Text style={s.cardTitle}>Tune your feed</Text><Pressable accessibilityRole="button" accessibilityLabel="Close filters" onPress={() => setFiltersOpen(false)} style={s.close}><Icon name="close" /></Pressable></View>
+            <ScrollView>              <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={s.filters}
@@ -643,202 +610,10 @@ function AppContent() {
                   </Pressable>
                 )}
               </View>
-              {tab === "Nearby" && !nearby ? (
-                <View style={s.empty}>
-                  <Icon name="navigate-outline" size={36} color={C.orange} />
-                  <Text style={s.cardTitle}>
-                    Your neighbourhood, wherever you are.
-                  </Text>
-                  <Text style={s.subtitle}>
-                    Use your location to see nearby changes.
-                  </Text>
-                  <Button label="Find changes near me" onPress={locate} />
-                  {!!searchError && <Text style={s.error}>{searchError}</Text>}
-                </View>
-              ) : tab === "Map" ? (
-                <View style={{ minHeight: 450 }}>
-                  <EventMap
-                    events={shown}
-                    place={mapPlace}
-                    onSelect={setDetail}
-                  />
-                </View>
-              ) : !shown.length ? (
-                <View style={s.empty}>
-                  <Icon
-                    name={tab === "Saved" ? "bookmark-outline" : "leaf-outline"}
-                    size={36}
-                    color={C.green}
-                  />
-                  <Text style={s.cardTitle}>
-                    {tab === "Saved"
-                      ? "Keep a change for later."
-                      : "Quiet is a good thing."}
-                  </Text>
-                  <Text style={s.subtitle}>
-                    {tab === "Saved"
-                      ? "Tap the bookmark on any card."
-                      : "No changes match this view yet. Try another category or a wider radius."}
-                  </Text>
-                  <Button
-                    label="Adjust places"
-                    onPress={() => setLocationsOpen(true)}
-                    quiet
-                  />
-                </View>
-              ) : (
-                shown.map((e, i) => {
-                  const cat = categories[e.category];
-                  const rankedEvent = ranked.find((x) => x.id === e.id);
-                  return (
-                    <View key={e.id} style={[s.card, i === 0 && s.firstCard]}>
-                      <View style={s.cardTop}>
-                        <View style={s.row}>
-                          <View
-                            style={[
-                              s.categoryIcon,
-                              { backgroundColor: cat.color + "15" },
-                            ]}
-                          >
-                            <Icon
-                              name={cat.icon as keyof typeof Ionicons.glyphMap}
-                              color={cat.color}
-                              size={17}
-                            />
-                          </View>
-                          <Text style={[s.cardCategory, { color: cat.color }]}>
-                            {cat.label}
-                          </Text>
-                        </View>
-                        <Text style={s.small}>
-                          {e.sample
-                            ? "Example"
-                            : new Date(e.detectedAt).toLocaleDateString(
-                                "en-IN",
-                                { day: "numeric", month: "short" },
-                              )}
-                        </Text>
-                      </View>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Read ${e.title}`}
-                        onPress={() => setDetail(e)}
-                      >
-                        <Text style={s.cardTitle}>{e.title}</Text>
-                        {prefs.followed.includes(e.entityId) && (
-                          <Text style={s.link}>Following this place</Text>
-                        )}
-                        <Text style={s.summary}>{e.summary}</Text>
-                      </Pressable>
-                      <View style={s.diff}>
-                        <Text style={s.diffLabel}>WHAT CHANGED</Text>
-                        <View style={s.diffRow}>
-                          <Text style={s.minus}>−</Text>
-                          <Text style={s.oldState}>{e.oldState}</Text>
-                        </View>
-                        <View style={s.diffRow}>
-                          <Text style={s.plus}>+</Text>
-                          <Text style={s.newState}>{e.newState}</Text>
-                        </View>
-                      </View>
-                      <View style={s.cardFooter}>
-                        <Pressable
-                          onPress={() => mapEvent(e)}
-                          style={[s.row, { flex: 1 }]}
-                        >
-                          <Icon
-                            name="location-outline"
-                            size={14}
-                            color={C.muted}
-                          />
-                          <Text style={s.small}>
-                            {rankedEvent
-                              ? `${formatDistance(rankedEvent.distance)} away`
-                              : "View location"}
-                          </Text>
-                        </Pressable>
-                        <Pressable onPress={() => setDetail(e)}>
-                          <Text style={s.sourceText}>
-                            {e.sample
-                              ? "Sample"
-                              : `${e.sources.length} source${e.sources.length === 1 ? "" : "s"}`}{" "}
-                            ↗
-                          </Text>
-                        </Pressable>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={
-                            prefs.saved.includes(e.id)
-                              ? `Unsave ${e.title}`
-                              : `Save ${e.title}`
-                          }
-                          onPress={() => toggle("saved", e.id)}
-                          style={s.saveButton}
-                        >
-                          <Icon
-                            name={
-                              prefs.saved.includes(e.id)
-                                ? "bookmark"
-                                : "bookmark-outline"
-                            }
-                            size={19}
-                            color={
-                              prefs.saved.includes(e.id) ? C.orange : C.ink
-                            }
-                          />
-                        </Pressable>
-                      </View>
-                    </View>
-                  );
-                })
-              )}
-              {!!shown.length && tab !== "Map" && (
-                <View style={s.endnote}>
-                  <View style={s.endLine} />
-                  <Icon
-                    name="checkmark-circle-outline"
-                    size={22}
-                    color={C.green}
-                  />
-                  <Text style={s.bold}>You’re in the loop.</Text>
-                  <Text style={s.small}>Go enjoy your neighbourhood.</Text>
-                </View>
-              )}
-              {!!notice && (
-                <Text
-                  accessibilityLiveRegion="polite"
-                  style={[s.small, { textAlign: "center", marginBottom: 16 }]}
-                >
-                  {notice}
-                </Text>
-              )}
-            </ScrollView>
-            <View style={s.nav}>
-              {tabs.map(([name, icon]) => (
-                <Pressable
-                  accessibilityRole="tab"
-                  accessibilityLabel={name}
-                  accessibilityState={{ selected: tab === name }}
-                  key={name}
-                  onPress={() => setTab(name)}
-                  style={s.navItem}
-                >
-                  <Icon
-                    name={icon}
-                    size={22}
-                    color={tab === name ? C.orange : C.muted}
-                  />
-                  <Text
-                    style={[s.navText, tab === name && { color: C.orange }]}
-                  >
-                    {name}
-                  </Text>
-                  {tab === name && <View style={s.navDot} />}
-                </Pressable>
-              ))}
-            </View>
-          </>
-        )}
+</ScrollView>
+            <Button label="Show stories" onPress={() => setFiltersOpen(false)} />
+          </View></SafeAreaView>
+        </Modal>
         <Modal
           visible={locationsOpen}
           animationType="slide"
@@ -898,6 +673,8 @@ function AppContent() {
                       ? "Fictional example. This is not a verified local report."
                       : `Detected ${new Date(detail.detectedAt).toLocaleString("en-IN")} · ${detail.confidence >= 0.85 ? "High" : "Moderate"} evidence confidence (model estimate)`}
                   </Text>
+                  {detail.sample && <View style={{ gap: 8 }}><Text style={s.small}>Illustrative archive photo, not evidence for this story. Nanakramguda, 25 Nov 2025. Tushar0034 / Wikimedia Commons · CC BY 4.0. Resized and cropped for display.</Text>
+                  <Pressable accessibilityRole="link" onPress={() => Linking.openURL("https://commons.wikimedia.org/wiki/File:View_of_service_road_junction_towards_Nanakramguda,_November_2025.jpg")}><Text style={s.link}>Photo source &amp; licence ↗</Text></Pressable></View>}
                   <Text style={s.eyebrow}>THE EVIDENCE</Text>
                   {detail.sources.length ? (
                     detail.sources.map((source) => (
@@ -1001,12 +778,15 @@ export default function App() {
   );
 }
 const s = StyleSheet.create({
+  welcomeImage: { minHeight: 270, justifyContent: "flex-end", overflow: "hidden", borderRadius: 4 },
+  feedToolbar: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 8 },
+  notice: { flexDirection: "row", alignItems: "center", paddingLeft: 16, backgroundColor: "#242D24" },
   safe: { flex: 1, backgroundColor: C.bg },
-  shell: { flex: 1, width: "100%", maxWidth: 760, alignSelf: "center" },
+  shell: { flex: 1, width: "100%", maxWidth: 620, alignSelf: "center" },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
   header: {
     paddingHorizontal: 24,
-    paddingVertical: 18,
+    paddingVertical: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1023,7 +803,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   logoText: {
-    color: "white",
+    color: "#101211",
     fontSize: 30,
     fontWeight: "800",
     lineHeight: 35,
@@ -1036,9 +816,8 @@ const s = StyleSheet.create({
     color: C.ink,
   },
   tagline: { fontSize: 11, color: C.muted },
-  dot: { width: 5, height: 5, borderRadius: 4, backgroundColor: C.orange },
   content: { padding: 22, paddingBottom: 30 },
-  onboarding: { padding: 26, paddingTop: 38 },
+  onboarding: { padding: 24, paddingTop: 16, paddingBottom: 40 },
   eyebrow: {
     fontSize: 10,
     fontWeight: "700",
@@ -1063,14 +842,14 @@ const s = StyleSheet.create({
     borderRadius: 13,
     alignItems: "center",
   },
-  buttonText: { color: "white", fontSize: 14, fontWeight: "600" },
-  quiet: { backgroundColor: "#ECEEE7" },
+  buttonText: { color: "#101211", fontSize: 14, fontWeight: "700" },
+  quiet: { backgroundColor: "#303730" },
   locationButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     padding: 18,
-    backgroundColor: "#F0E9DC",
+    backgroundColor: "#242D24",
     borderRadius: 14,
   },
   search: {
@@ -1079,7 +858,7 @@ const s = StyleSheet.create({
     gap: 9,
     borderWidth: 1,
     borderColor: C.line,
-    backgroundColor: "white",
+    backgroundColor: "#1C211E",
     borderRadius: 13,
     padding: 15,
   },
@@ -1091,7 +870,7 @@ const s = StyleSheet.create({
     borderColor: C.line,
     borderRadius: 12,
   },
-  chipActive: { backgroundColor: C.ink, borderColor: C.ink },
+  chipActive: { backgroundColor: "#3C4D28", borderColor: C.orange },
   placeRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1104,27 +883,10 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#E9EDE5",
+    backgroundColor: "#303730",
     alignItems: "center",
     justifyContent: "center",
   },
-  introNote: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 30,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: C.line,
-    borderRadius: 14,
-  },
-  topline: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   refresh: {
     width: 42,
     height: 42,
@@ -1134,17 +896,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  sampleBanner: {
-    marginTop: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    backgroundColor: "#F2E8DC",
-    borderRadius: 9,
-  },
-  sampleText: { fontSize: 10, letterSpacing: 0.5, color: "#965A36", flex: 1 },
   filters: { gap: 8, paddingVertical: 20 },
   chip: {
     borderWidth: 1,
@@ -1175,20 +926,6 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E9E8E0",
   },
-  firstCard: { borderTopWidth: 3, borderTopColor: C.orange },
-  cardTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 15,
-  },
-  categoryIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   cardCategory: { fontSize: 11, fontWeight: "700" },
   cardTitle: {
     fontSize: 23,
@@ -1197,12 +934,12 @@ const s = StyleSheet.create({
     letterSpacing: -0.6,
     color: C.ink,
   },
-  summary: { fontSize: 13, lineHeight: 21, color: "#72776E", marginTop: 10 },
+  summary: { fontSize: 13, lineHeight: 21, color: "#BCC4BB", marginTop: 10 },
   diff: {
     marginTop: 18,
     padding: 14,
     borderRadius: 10,
-    backgroundColor: "#F5F6F1",
+    backgroundColor: "#222922",
     gap: 7,
   },
   diffLabel: {
@@ -1212,10 +949,7 @@ const s = StyleSheet.create({
     color: C.muted,
     marginBottom: 3,
   },
-  diffRow: { flexDirection: "row", gap: 9 },
-  minus: { color: "#9D8D80", fontSize: 13 },
-  plus: { color: C.green, fontSize: 13 },
-  oldState: { color: "#96968C", fontSize: 12, lineHeight: 19, flexShrink: 1 },
+  oldState: { color: "#A9B1AA", fontSize: 12, lineHeight: 19, flexShrink: 1 },
   newState: {
     color: C.green,
     fontSize: 12,
@@ -1223,17 +957,6 @@ const s = StyleSheet.create({
     fontWeight: "600",
     flexShrink: 1,
   },
-  cardFooter: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "center",
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderColor: "#F0F0E9",
-  },
-  sourceText: { fontSize: 10, color: C.green, fontWeight: "600" },
-  saveButton: { padding: 7 },
   nav: {
     flexDirection: "row",
     paddingTop: 13,
@@ -1246,13 +969,11 @@ const s = StyleSheet.create({
   navText: { fontSize: 10, fontWeight: "600", color: C.muted },
   navDot: { height: 3, width: 3, borderRadius: 2, backgroundColor: C.orange },
   empty: { paddingVertical: 40, alignItems: "center", gap: 18 },
-  endnote: { alignItems: "center", gap: 10, paddingVertical: 28 },
-  endLine: { height: 1, width: 42, backgroundColor: C.line, marginBottom: 10 },
-  error: { color: "#AE422E", fontSize: 13, lineHeight: 20 },
+  error: { color: "#FFAF9F", fontSize: 13, lineHeight: 20 },
   errorBox: {
     padding: 15,
     gap: 12,
-    backgroundColor: "#FCEDE7",
+    backgroundColor: "#3C2824",
     borderRadius: 12,
     marginTop: 15,
   },
@@ -1260,7 +981,7 @@ const s = StyleSheet.create({
   link: { color: C.orange, fontSize: 12, fontWeight: "600" },
   evidence: {
     padding: 18,
-    backgroundColor: "white",
+    backgroundColor: "#1C211E",
     borderWidth: 1,
     borderColor: C.line,
     borderRadius: 13,

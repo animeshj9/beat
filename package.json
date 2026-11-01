@@ -18,7 +18,8 @@
     "check:pwa": "node scripts/check-pwa.mjs",
     "build:cloudflare": "npm run check && npm run build:pwa && npm run check:pwa",
     "deploy:worker": "wrangler deploy --config wrangler.jsonc",
-    "check:worker": "wrangler deploy --dry-run --config wrangler.jsonc --outdir worker-dist"
+    "check:worker": "wrangler deploy --dry-run --config wrangler.jsonc --outdir worker-dist",
+    "check:ui": "node scripts/check-ui.mjs"
   },
   "keywords": [],
   "author": "",
@@ -40,6 +41,7 @@
   "devDependencies": {
     "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",
+    "playwright": "^1.64.1",
     "typescript": "^7.0.2",
     "wrangler": "4.135.0"
   },

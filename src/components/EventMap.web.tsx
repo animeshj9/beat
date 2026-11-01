@@ -19,7 +19,7 @@ export default function EventMap({
         src: url,
         style: { width: "100%", height: 320, border: 0, borderRadius: 18 },
       })}
-      <Text style={{ color: "#71766E" }}>
+      <Text style={{ color: "#B9C4B6" }}>
         Select a change below to inspect its location. Native apps show every
         change as a map pin.
       </Text>
@@ -27,9 +27,9 @@ export default function EventMap({
         <Pressable
           key={e.id}
           onPress={() => onSelect(e)}
-          style={{ padding: 15, backgroundColor: "#FFF", borderRadius: 12 }}
+          style={{ padding: 15, backgroundColor: "#242D27", borderRadius: 12 }}
         >
-          <Text style={{ color: "#242D27", fontWeight: "600" }}>
+          <Text style={{ color: "#F6F7F2", fontWeight: "600" }}>
             {i + 1}. {e.title}
           </Text>
         </Pressable>
@@ -41,7 +41,7 @@ export default function EventMap({
           )
         }
       >
-        <Text>Open full map ↗</Text>
+        <Text style={{ color: "#D6FF62" }}>Open full map ↗</Text>
       </Pressable>
     </View>
   );
