@@ -34,7 +34,7 @@ mkdirSync(screenshotDir,{recursive:true});
  await p.getByRole('button',{name:'Filter feed'}).click();await p.getByText('Everything',{exact:true}).click();await p.getByRole('button',{name:'Close filters'}).click();
  await p.getByRole('button',{name:'Manage places'}).click();await p.getByLabel('Close places',{exact:true}).click();
  assert.equal(await p.evaluate(()=>window.__locationRequests),0,'Location must remain opt-in');
- await p.getByRole('tab',{name:'Nearby',exact:true}).click();await p.getByRole('button',{name:'Find changes near me'}).click();await p.getByText(/Location permission is off|We couldn’t get your location/).waitFor();
+ await p.getByRole('tab',{name:'Nearby',exact:true}).click();await p.getByRole('button',{name:'Find changes near me'}).click();await p.locator('#root').getByText(/Location permission is off|We couldn’t get your location/).waitFor();
  await p.getByRole('tab',{name:'For you',exact:true}).click();
  await p.getByRole('button',{name:'Install Beat',exact:true}).click();await p.getByRole('dialog',{name:'Install Beat instructions'}).waitFor();await p.keyboard.press('Escape');await p.getByRole('dialog',{name:'Install Beat instructions'}).waitFor({state:'detached'});
  await p.getByRole('tab',{name:'Map',exact:true}).click();await p.getByText('12.',{exact:false}).last().scrollIntoViewIfNeeded();await p.getByRole('tab',{name:'For you',exact:true}).click();
