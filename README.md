@@ -104,3 +104,7 @@ Tests cover geographic filtering, feed ranking, source validation, stale evidenc
 Live discovery must be configured and its factual quality assessed before launch. Source URL validation establishes provenance, not independent fact verification. Confidence is a model estimate. Entity resolution is model-assisted and exact normalised-state matching, not comprehensive semantic deduplication. The app has no account sync, background notifications, UGC or automatic nationwide discovery. Feedback and follows stay on the device; follows highlight matching entities, not push alerts. A public service will need abuse controls, budgets, observability, geocoder capacity and a retention policy. The PostgreSQL adapter needs integration testing against the deployment database.
 
 See [the product spec](docs/product-spec.md), [architecture](docs/architecture.md) and [privacy notes](docs/privacy.md).
+
+## Installable sample website
+
+The sample app can be installed from a browser on Android and iPhone. `npm run build:pwa` builds it, and `npm run check:pwa` validates the installation and offline assets. GitHub Actions checks pull requests and deploys the tested `main` artifact to GitHub Pages, following the existing lab website pipeline. See [deployment and phone installation](docs/installable-alpha.md) for the one-time Pages/DNS setup for `beat.animeshj9.com`.

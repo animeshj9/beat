@@ -13,7 +13,9 @@
     "api": "node --env-file-if-exists=.env server/index.mjs",
     "crawl": "node --env-file-if-exists=.env server/crawl.mjs",
     "export": "expo export --platform web",
-    "check": "npm run typecheck && npm test"
+    "check": "npm run typecheck && npm test",
+    "build:pwa": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && EXPO_PUBLIC_API_URL= EXPO_OFFLINE=1 expo export --platform web && node scripts/build-pwa.mjs",
+    "check:pwa": "node scripts/check-pwa.mjs"
   },
   "keywords": [],
   "author": "",
